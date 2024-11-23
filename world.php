@@ -12,34 +12,62 @@ try {
 }
 
 $country = isset($_GET['country']) ? $_GET['country'] : '';
+$lookup = isset($_GET['lookup']) ? $_GET['lookup'] : '';
 
-if ($country) {
-    $stmt = $conn->prepare("SELECT name, continent, independence_year, head_of_state FROM countries WHERE name LIKE :country");
+if ($lookup === 'cities') {
+    $stmt = $conn->prepare(
+        "SELECT cities.name AS city, cities.district, cities.population 
+         FROM cities 
+         JOIN countries ON cities.country_code = countries.code 
+         WHERE countries.name LIKE :country"
+    );
     $stmt->execute(['country' => "%$country%"]);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo '<table border="1" cellspacing="0" cellpadding="5">
+            <thead>
+                <tr>
+                    <th>City Name</th>
+                    <th>District</th>
+                    <th>Population</th>
+                </tr>
+            </thead>
+            <tbody>';
+    foreach ($results as $row) {
+        echo '<tr>
+                <td>' . htmlspecialchars($row['city']) . '</td>
+                <td>' . htmlspecialchars($row['district']) . '</td>
+                <td>' . htmlspecialchars($row['population']) . '</td>
+              </tr>';
+    }
+    echo '</tbody></table>';
 } else {
-    $stmt = $conn->query("SELECT name, continent, independence_year, head_of_state FROM countries");
+    $stmt = $conn->prepare(
+        "SELECT name, continent, independence_year, head_of_state 
+         FROM countries 
+         WHERE name LIKE :country"
+    );
+    $stmt->execute(['country' => "%$country%"]);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo '<table border="1" cellspacing="0" cellpadding="5">
+            <thead>
+                <tr>
+                    <th>Country Name</th>
+                    <th>Continent</th>
+                    <th>Independence Year</th>
+                    <th>Head of State</th>
+                </tr>
+            </thead>
+            <tbody>';
+    foreach ($results as $row) {
+        echo '<tr>
+                <td>' . htmlspecialchars($row['name']) . '</td>
+                <td>' . htmlspecialchars($row['continent']) . '</td>
+                <td>' . htmlspecialchars($row['independence_year'] ?: 'N/A') . '</td>
+                <td>' . htmlspecialchars($row['head_of_state'] ?: 'N/A') . '</td>
+              </tr>';
+    }
+    echo '</tbody></table>';
 }
-
-$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
-<table border="1" cellspacing="0" cellpadding="5">
-    <thead>
-        <tr>
-            <th>Country Name</th>
-            <th>Continent</th>
-            <th>Independence Year</th>
-            <th>Head of State</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($results as $row): ?>
-        <tr>
-            <td><?= htmlspecialchars($row['name']) ?></td>
-            <td><?= htmlspecialchars($row['continent']) ?></td>
-            <td><?= htmlspecialchars($row['independence_year'] ?: 'N/A') ?></td>
-            <td><?= htmlspecialchars($row['head_of_state'] ?: 'N/A') ?></td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
